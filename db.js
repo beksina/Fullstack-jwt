@@ -10,12 +10,19 @@ const config = {
 if (process.env.LOGGING) {
   delete config.logging;
 }
-const conn = new Sequelize(process.env.DATABASE_URL || "acme_db", "citizenpain", "kickpunch", config);
+const conn = new Sequelize(process.env.DATABASE_URL || "postgres://localhost/acme_db", config);
 
 const User = conn.define("user", {
   username: STRING,
   password: STRING,
 });
+
+const Note = conn.define('note', {
+  text: Sequelize.STRING
+})
+
+User.hasMany(Note);
+Note.belongsTo(User);
 
 User.beforeCreate(async (user, options) => {
   const hashedPassword = await bcrypt.hash(user.password, 10);
@@ -64,7 +71,15 @@ const syncAndSeed = async () => {
     { username: "moe", password: "moe_pw" },
     { username: "larry", password: "larry_pw" },
   ];
+
+  const notes = [ { text: 'hello world'}, { text: 'reminder to buy groceries'}, { text: 'reminder to do laundry'} ];
+  const [note1, note2, note3] = await Promise.all(notes.map( note => Note.create(note)));
+
   const [lucy, moe, larry] = await Promise.all(credentials.map(credential => User.create(credential)));
+
+  await lucy.setNotes(note1);
+  await moe.setNotes([note2, note3]);
+
   return {
     users: {
       lucy,
@@ -78,5 +93,6 @@ module.exports = {
   syncAndSeed,
   models: {
     User,
+    Note
   },
 };

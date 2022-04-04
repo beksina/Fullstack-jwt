@@ -7,5 +7,4 @@ const init = async () => {
   app.listen(port, () => console.log(`listening on port ${port}`));
 };
 
-console.log(process.env.JWT);
 init();
